@@ -11,6 +11,18 @@ def prepareZ(Z, normmean, normstd):
 def normvectors(Z):
     return np.mean(Z, axis = 0), np.std(Z, axis = 0)
 
+def rep(var,name):
+    return np.tile(name,np.asarray(var.shape))
+
+def tentries(theta, setup, names):
+    tentries = [] # initialize list
+    params = dlp.tunpack(theta, setup)
+    for i in range(np.size(params)-1):
+        tentries.append(rep(params[i],names[i]))
+    tentries.append(rep(params[-1], names[-1]))
+    tentries.append(setup) # appending setup, which we need for tpack
+    return dlp.tpack(*tentries)
+
 def getdata(path):
     "--- Data: ---"
     Data = pd.read_stata(path)
@@ -33,6 +45,7 @@ def getdata(path):
     setup = [N,NI,PP,PE] # model description
 
     "--- Initial Values: ---"
+    names = ["rho   ", "eta   ", "alpha1", "alpha2", "alpha3", "beta  ", "Sig   "]
     rho0 = np.append(.5, np.zeros(PE)) # father's share in parents' share
     eta0 = np.append(.3, np.zeros(PE)) # childrens' share
     alpha10 = np.append(2, np.zeros(PP))
@@ -41,5 +54,6 @@ def getdata(path):
     beta0 = np.append(.01, np.zeros(PP)) # common slope
     cov0 = (np.identity(NI)+.1*np.ones((NI,NI)))*.001 # covariance matrix
     theta0 = dlp.tpack(rho0, eta0, alpha10, alpha20, alpha30, beta0, cov0, setup) # parameter vector
+    tnames = tentries(theta0, setup, names)
 
-    return theta0, W, X, Z, ZE, setup, meanZ, stdZ
+    return theta0, W, X, Z, ZE, setup, tnames, meanZ, stdZ
