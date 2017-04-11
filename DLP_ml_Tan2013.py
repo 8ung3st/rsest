@@ -1,12 +1,13 @@
 import numpy as np
-import lib.dlp_art_data as dlp_art_data
+import lib.read_dta as read
 import lib.dlp as dlp
 import lib.ndiff as ndiff
 from __future__ import division
 np.random.seed(1) # set the seed
 
 "--- Simulate Data ---"
-theta0, W, X, Z, ZE, setup = dlp_art_data.get() # the artificial data is set up in dlp_art_data.py
+path = "../../data/Tanzania 2013/SampleDLP.dta"
+theta0, W, X, Z, ZE, setup, meanZ, stdZ = read.getdata(path) # the artificial data is set up in dlp_art_data.py
 
 "--- Optimize: ---"
 import scipy.optimize as opt
