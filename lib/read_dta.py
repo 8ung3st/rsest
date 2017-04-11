@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import dlp
 
 def prepareZ(Z, normmean, normstd):
     N = Z.shape[0]
@@ -11,44 +12,34 @@ def normvectors(Z):
     return np.mean(Z, axis = 0), np.std(Z, axis = 0)
 
 def getdata(path):
-    bsharesC = ['bsfoodpq', 'bsvicesq', 'bshouspq', 'bsmclothq', 'bswclothq', 'bstranspq', 'bshealcareq', 'bsedureanq', 'bsentertpq']
-    bshares1 = ['bsfoodpq', 'bsvicesq', 'bshouspq', 'bsmclothq', 'bstranspq', 'bshealcareq', 'bsedureanq', 'bsentertpq']
-    bshares2 = ['bsfoodpq', 'bsvicesq', 'bshouspq', 'bswclothq', 'bstranspq', 'bshealcareq', 'bsedureanq', 'bsentertpq']
+    "--- Data: ---"
+    Data = pd.read_stata(path)
 
-    "--- Couples' Data ---"
-    DataC = pd.read_stata(path+ "couples.dta")
+    W  = np.asarray(Data[['w1', 'w2', 'w3']])
+    X  = np.asarray(Data['lexp'])
 
-    WC = np.asarray(DataC[bsharesC])# leaves out "other"
-    XC = np.asarray(np.log(DataC['totexpq']))
-    ZC1 = np.asarray(DataC[['ownhous', 'owncar', 'age_h', 'age_h2', 'educlassm', 'earn_h']])
-    ZC2 = np.asarray(DataC[['ownhous', 'owncar', 'age_w', 'age_w2', 'educlassf', 'earn_w']])
-    # standardize with respect to the population of married individuals:
-    normmean, normstd = normvectors(np.concatenate((ZC1,ZC2),axis=0))
-    ZC1 = prepareZ(ZC1, normmean, normstd)
-    ZC2 = prepareZ(ZC2, normmean, normstd)
+    Z  = np.asarray(Data[['age_h','age_w','nkids']])
+    meanZ, stdZ = normvectors(Z)
+    Z = prepareZ(Z, meanZ, stdZ)
 
-    ZD1 = np.concatenate((ZC1,np.asarray(DataC[['onekid','twokids']])),axis=1)
-    ZD2 = np.concatenate((ZC2,np.asarray(DataC[['onekid','twokids']])),axis=1)
+    ZE = np.asarray(Data[['age_h','age_w','nkids']])
+    meanZE, stdZE = normvectors(ZE)
+    ZE = prepareZ(ZE, meanZE, stdZE)
 
-    ZE = np.asarray(DataC[['ownhous', 'owncar', 'age_h', 'age_h2', 'educlassm', 'age_w', 'age_w2', 'educlassf', 'incshare']])
-    ZEmirror = np.asarray(DataC[['ownhous', 'owncar', 'age_w', 'age_w2', 'educlassf', 'age_h', 'age_h2', 'educlassm', 'incshare']])
-    normmeanE, normstdE = normvectors(np.concatenate((ZE,ZEmirror),axis=0))
-    ZE = prepareZ(ZE, normmeanE, normstdE)
-    ZE = np.concatenate((ZE,np.asarray(DataC[['onekid','twokids']])),axis=1)
+    "--- Setup: ---"
+    N, NI  = W.shape # number of hh, number of hh members
+    PP  = Z.shape[1]-1 # number of explanatory variables (accross all equations) for preferences
+    PE  = ZE.shape[1]-1 # number of explanatory variables for eta
+    setup = [N,NI,PP,PE] # model description
 
+    "--- Initial Values: ---"
+    rho0 = np.append(.5, np.zeros(PE)) # father's share in parents' share
+    eta0 = np.append(.3, np.zeros(PE)) # childrens' share
+    alpha10 = np.append(2, np.zeros(PP))
+    alpha20 = np.append(2, np.zeros(PP))
+    alpha30 = np.append(2, np.zeros(PP))
+    beta0 = np.append(.01, np.zeros(PP)) # common slope
+    cov0 = (np.identity(NI)+.1*np.ones((NI,NI)))*.001 # covariance matrix
+    theta0 = dlp.tpack(rho0, eta0, alpha10, alpha20, alpha30, beta0, cov0, setup) # parameter vector
 
-    "--- Singles' Data ---"
-    DataS = pd.read_stata(path+ "singles.dta")
-
-    Data1 = DataS[(DataS.sex == 1)] # men
-    Data2 = DataS[(DataS.sex == 2)] # women
-
-    W1 = np.asarray(Data1[bshares1])# leaves out "other"
-    X1 = np.asarray(np.log(Data1['totexpq']))
-    Z1 = prepareZ(np.asarray(Data1[['ownhous', 'owncar', 'age', 'age2', 'educlass', 'earn']]), normmean, normstd)
-
-    W2 = np.asarray(Data2[bshares2])# leaves out "other"
-    X2 = np.asarray(np.log(Data2['totexpq']))
-    Z2 = prepareZ(np.asarray(Data2[['ownhous', 'owncar', 'age', 'age2', 'educlass', 'earn']]), normmean, normstd)
-
-    return theta0, W, X, Z, ZE, setup
+    return theta0, W, X, Z, ZE, setup, meanZ, stdZ
