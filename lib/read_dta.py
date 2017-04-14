@@ -14,11 +14,20 @@ def normvectors(Z):
 def rep(var,name):
     return np.tile(name,np.asarray(var.shape))
 
+def enumerep(var,name):
+    pnames = list(rep(var, name))
+    for i in range(var.shape[0]):
+        if var.ndim == 2:
+            print "panic!"
+        else:
+            pnames[i] = "$\\" + pnames[i] + "_{" + str(i) + "}$"
+    return pnames
+
 def tentries(theta, setup, names):
     tentries = [] # initialize list
     params = dlp.tunpack(theta, setup)
     for i in range(np.size(params)-1):
-        tentries.append(rep(params[i],names[i]))
+        tentries.append(enumerep(params[i],names[i]))
     tentries.append(rep(params[-1], names[-1]))
     tentries.append(setup) # appending setup, which we need for tpack
     return dlp.tpack(*tentries)
@@ -45,7 +54,7 @@ def getdata(path):
     setup = [N,NI,PP,PE] # model description
 
     "--- Initial Values: ---"
-    names = ["rho   ", "eta   ", "alpha1", "alpha2", "alpha3", "beta  ", "Sig   "]
+    names = ["rho", "eta", "alpha^1", "alpha^2", "alpha^3", "beta", "Sigma"]
     rho0 = np.append(.5, np.zeros(PE)) # father's share in parents' share
     eta0 = np.append(.3, np.zeros(PE)) # childrens' share
     alpha10 = np.append(2, np.zeros(PP))
