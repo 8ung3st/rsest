@@ -5,9 +5,9 @@ import lib.ndiff as ndiff
 from __future__ import division
 np.random.seed(1) # set the seed
 
-"--- Simulate Data ---"
+"--- Load Data ---"
 path = "../../data/Tanzania 2013/SampleDLP.dta"
-theta0, W, X, Z, ZE, setup, meanZ, stdZ = read.getdata(path) # the artificial data is set up in dlp_art_data.py
+theta0, W, X, Z, ZE, setup, tnames, meanZ, stdZ = read.getdata(path) # the artificial data is set up in dlp_art_data.py
 
 "--- Optimize: ---"
 import scipy.optimize as opt
@@ -22,7 +22,20 @@ thetasd = np.sqrt(np.diag(paramcov))
 np.set_printoptions(precision=4) # so numbers are displayed with this degree of precision
 np.set_printoptions(suppress=True)
 tdim = np.size(theta0)
-print reduce(np.append, [range(tdim),theta0, thetahat, thetasd]).reshape(-1,tdim).T
+print reduce(np.append, [range(tdim), theta0, thetahat, thetasd]).reshape(-1,tdim).T
+
+thetatable = reduce(np.append, [theta0, thetahat, thetasd]).reshape(-1,tdim).T
+latextable = ""
+for entry, line in zip(tnames, thetatable): # just remove the "+ entry" to have no parameter names
+    latextable = latextable + entry + " & " + " & ".join(map('{0:.3f}'.format, line)) + " \\\\\n"
+
+with open("../tab/Tan2013.tex", "w") as txt_file:
+    txt_file.write(latextable)
+
+
+
+
+
 
 "--- Starting Value Analysis ---"
 def startvaltest(thetahat, startingcov, S, tol):
