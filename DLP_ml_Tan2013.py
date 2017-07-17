@@ -5,7 +5,7 @@ import lib.ndiff as ndiff
 from __future__ import division
 np.random.seed(1) # set the seed
 
-"--- Simulate Data ---"
+"--- Load Data ---"
 path = "../../data/Tanzania 2013/SampleDLP.dta"
 theta0, W, X, Z, ZE, setup, tnames, meanZ, stdZ = read.getdata(path) # the artificial data is set up in dlp_art_data.py
 
@@ -29,7 +29,7 @@ latextable = ""
 for entry, line in zip(tnames, thetatable): # just remove the "+ entry" to have no parameter names
     latextable = latextable + entry + " & " + " & ".join(map('{0:.3f}'.format, line)) + " \\\\\n"
 
-with open("../tab/Tan2013.txt", "w") as txt_file:
+with open("../tab/Tan2013.tex", "w") as txt_file:
     txt_file.write(latextable)
 
 
