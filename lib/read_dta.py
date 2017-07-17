@@ -18,17 +18,20 @@ def enumerep(var,name):
     pnames = list(rep(var, name))
     for i in range(var.shape[0]):
         if var.ndim == 2:
-            print "panic!"
+            row = list(pnames[i])
+            for j in range(var.shape[1]):
+                row[j] = "$\\" + row[j] + "_{" + str(i) + "," + str(j) + "}$"
+            pnames[i] = np.asarray(row)
         else:
             pnames[i] = "$\\" + pnames[i] + "_{" + str(i) + "}$"
-    return pnames
+    return np.asarray(pnames)
 
 def tentries(theta, setup, names):
     tentries = [] # initialize list
     params = dlp.tunpack(theta, setup)
     for i in range(np.size(params)-1):
         tentries.append(enumerep(params[i],names[i]))
-    tentries.append(rep(params[-1], names[-1]))
+    tentries.append(enumerep(params[-1], names[-1]))
     tentries.append(setup) # appending setup, which we need for tpack
     return dlp.tpack(*tentries)
 
@@ -36,8 +39,8 @@ def getdata(path):
     "--- Data: ---"
     Data = pd.read_stata(path)
 
-    W  = np.asarray(Data[['w1', 'w2', 'w3']])
-    X  = np.asarray(Data['lexp'])
+    W  = np.asarray(Data[['wclothmR', 'wclothwR', 'wclothcR', 'wfoodinR', 'walctobR', 'wfoodoutR', 'wutilitiesR', 'whhexpensesR', 'whealthR', 'wtransportR', 'wcommunicR', 'wrecreatR', 'weducaR', 'wotherR']])
+    X  = np.asarray(Data['ltot'])
 
     Z  = np.asarray(Data[['age_h','age_w','nkids']])
     meanZ, stdZ = normvectors(Z)
