@@ -39,14 +39,15 @@ def getdata(path):
     "--- Data: ---"
     Data = pd.read_stata(path)
 
-    W  = np.asarray(Data[['wclothmR', 'wclothwR', 'wclothcR', 'wfoodinR', 'walctobR', 'wfoodoutR', 'wutilitiesR', 'whhexpensesR', 'whealthR', 'wtransportR', 'wcommunicR', 'wrecreatR', 'weducaR', 'wotherR']])
-    X  = np.asarray(Data['ltot'])
+    W  = np.asarray(Data[['w_clothm', 'w_clothw', 'w_clothc']])
+    X  = np.asarray(Data['ltotR'])
+    res  = np.asarray(Data['res'])
 
-    Z  = np.asarray(Data[['age_h','age_w','nkids']])
+    Z  = np.asarray(Data[[ 'kids_2', 'kids_3', 'kids_4', 'k_minage', 'k_meanage', 'sgirls', 'edu_h', 'edu_w', 'age_h', 'age_w', 'urban', 'wave4', 'death']])
     meanZ, stdZ = normvectors(Z)
     Z = prepareZ(Z, meanZ, stdZ)
 
-    ZE = np.asarray(Data[['age_h','age_w','nkids']])
+    ZE = np.asarray(Data[[ 'kids_2', 'kids_3', 'kids_4', 'k_minage', 'k_meanage', 'sgirls', 'edu_h', 'edu_w', 'age_h', 'age_w', 'urban', 'wave4', 'death']])
     meanZE, stdZE = normvectors(ZE)
     ZE = prepareZ(ZE, meanZE, stdZE)
 
@@ -68,4 +69,4 @@ def getdata(path):
     theta0 = dlp.tpack(rho0, eta0, alpha10, alpha20, alpha30, beta0, cov0, setup) # parameter vector
     tnames = tentries(theta0, setup, names)
 
-    return theta0, W, X, Z, ZE, setup, tnames, meanZ, stdZ
+    return theta0, W, X, res, Z, ZE, setup, tnames, meanZ, stdZ

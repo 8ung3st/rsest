@@ -7,7 +7,7 @@ np.random.seed(1) # set the seed
 
 "--- Load Data ---"
 path = "../../data/Tanzania 2013/SampleDLP.dta"
-theta0, W, X, Z, ZE, setup, tnames, meanZ, stdZ = read.getdata(path) # the artificial data is set up in dlp_art_data.py
+theta0, W, X, Xhat, Z, ZE, setup, tnames, meanZ, stdZ = read.getdata(path) # the artificial data is set up in dlp_art_data.py
 
 "--- Optimize: ---"
 import scipy.optimize as opt
