@@ -1,3 +1,5 @@
+import os
+os.chdir("/Users/alexwolf/Dropbox/Uni/WB RS Estimates/4. Estimation/rsest/")
 import numpy as np
 import lib.read_dta as read
 import lib.dlp as dlp
@@ -6,15 +8,15 @@ from __future__ import division
 np.random.seed(1) # set the seed
 
 "--- Load Data ---"
-path = "../../data/Tanzania 2013/SampleDLP.dta"
-theta0, W, X, Xhat, Z, ZE, setup, tnames, meanZ, stdZ = read.getdata(path) # the artificial data is set up in dlp_art_data.py
+path = "../../3. Data/Tanzania 3-4/Sample_py.dta"
+theta0, W, X, ZA, ZB, ZE, S, setup, tnames, meanZ, stdZ = read.getdata(path) # the artificial data is set up in dlp_art_data.py
 
 "--- Optimize: ---"
 import scipy.optimize as opt
 tol = 1e-7
-thetahat = opt.fmin_powell(dlp.neglogl, theta0, args = (W, X, Z, ZE, setup), xtol=tol, ftol=tol, maxfun = 1e5, maxiter = 1e5)
+thetahat = opt.fmin_powell(dlp.neglogl, theta0, args = (W, X, ZA, ZB, ZE, S, setup), xtol=tol, ftol=tol, maxfun = 1e6, maxiter = 1e5)
 
-H = ndiff.hessian(dlp.neglogl, thetahat, 1e-6, (W, X, Z, ZE, setup))
+H = ndiff.hessian(dlp.neglogl, thetahat, 1e-6, (W, X, ZA, ZB, ZE, S, setup))
 paramcov = np.linalg.inv(H)
 thetasd = np.sqrt(np.diag(paramcov))
 
@@ -29,11 +31,8 @@ latextable = ""
 for entry, line in zip(tnames, thetatable): # just remove the "+ entry" to have no parameter names
     latextable = latextable + entry + " & " + " & ".join(map('{0:.3f}'.format, line)) + " \\\\\n"
 
-with open("../tab/Tan2013.tex", "w") as txt_file:
+with open("../tab/Tan3-4.tex", "w") as txt_file:
     txt_file.write(latextable)
-
-
-
 
 
 
