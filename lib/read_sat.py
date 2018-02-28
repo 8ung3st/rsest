@@ -48,13 +48,13 @@ def getdata(path):
     meanZA, stdZA = normvectors(ZA)
     ZA = prepareZ(ZA, meanZA, stdZA)
 
-    #ZB  = np.asarray(Data[[ 'kids_2', 'kids_3', 'kids_4', 'k_minage', 'k_meanage', 'sgirls', 'edu_h', 'edu_w', 'age_h', 'age_w', 'urban', 'wave4', 'death']])
-    ZB  = np.asarray(Data[[ 'kids_2', 'kids_3', 'kids_4']])
+    #ZB  = np.asarray(Data[[ 'k_minage', 'k_meanage', 'sgirls', 'edu_h', 'edu_w', 'age_h', 'age_w', 'urban', 'wave4', 'death']])
+    ZB  = np.asarray(Data[[ 'urban']])
     meanZB, stdZB = normvectors(ZB)
     ZB = prepareZ(ZB, meanZB, stdZB)
 
-    #ZE = np.asarray(Data[[ 'kids_2', 'kids_3', 'kids_4', 'k_minage', 'k_meanage', 'sgirls', 'edu_h', 'edu_w', 'age_h', 'age_w', 'urban', 'wave4', 'death']])
-    ZE = np.asarray(Data[[ 'kids_2', 'kids_3', 'kids_4']])
+    #ZE = np.asarray(Data[['k_minage', 'k_meanage', 'sgirls', 'edu_h', 'edu_w', 'age_h', 'age_w', 'urban', 'wave4', 'death']])
+    ZE = np.asarray(Data[[ 'urban']])
     meanZE, stdZE = normvectors(ZE)
     ZE = prepareZ(ZE, meanZE, stdZE)
 
@@ -66,15 +66,17 @@ def getdata(path):
     setup = [N,NI,PA,PB,PE] # model description
 
     "--- Initial Values: ---"
-    names = ["rho", "eta", "alpha^1", "alpha^2", "alpha^3", "beta", "Sigma"]
+    names = ["rho", "eta", "alpha^1", "alpha^2", "alpha^3", "beta1", "beta2", "beta3", "Sigma"]
     rho0 = np.append(.5, np.zeros(PE)) # father's share in parents' share
     eta0 = np.append(.3, np.zeros(PE)) # childrens' share
     alpha10 = np.append(np.mean(W,0)[0], np.zeros(PA)) # initialized at mean budget shares
     alpha20 = np.append(np.mean(W,0)[1], np.zeros(PA))
     alpha30 = np.append(np.mean(W,0)[2], np.zeros(PA))
-    beta0 = np.append(.01, np.zeros(PB)) # common slope
+    beta10 = np.append(.01, np.zeros(PB))
+    beta20 = np.append(.01, np.zeros(PB))
+    beta30 = np.append(.01, np.zeros(PB))
     cov0 = (np.identity(NI)+.1*np.ones((NI,NI)))*.001 # covariance matrix
-    theta0 = dlp.tpack(rho0, eta0, alpha10, alpha20, alpha30, beta0, cov0, setup) # parameter vector
+    theta0 = dlp.tpack(rho0, eta0, alpha10, alpha20, alpha30, beta10, beta20, beta30, cov0, setup) # parameter vector
     tnames = tentries(theta0, setup, names)
 
     return theta0, W, X, ZA, ZB, ZE, S, setup, tnames, meanZE, stdZE
