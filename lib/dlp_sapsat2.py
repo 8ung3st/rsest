@@ -1,14 +1,14 @@
 # This module contains the funcitons needed to compute the DLP likelihood from parameters and data.
 # Flexibility: Covariates in shares and in tastes can be varied independently.
-# Limitations: Only does the linear SAP.
+# Limitations: Only does the linear SAT.
 
 import numpy as np
 
 "-----------------------------------------------------------"
 
-def tpack(rho, eta, alpha1, alpha2, alpha3, beta, Sig, setup):
+def tpack(rho, eta, alpha1, alpha2, alpha3, alpha4, alpha5, alpha6, beta1, beta4, beta5, beta6, Sig, setup):
     NI = setup[1]
-    return reduce(np.append, [rho, eta, alpha1, alpha2, alpha3, beta, Sig[np.tril_indices(NI)]])
+    return reduce(np.append, [rho, eta, alpha1, alpha2, alpha3, alpha4, alpha5, alpha6, beta1, beta4, beta5, beta6, Sig[np.tril_indices(NI)]])
 
 def extract(theta, mark, step):
     return mark+step, theta[mark:mark+step]
@@ -21,26 +21,35 @@ def tunpack(theta, setup):
     mark, alpha1 = extract(theta, mark, 1+PA)
     mark, alpha2 = extract(theta, mark, 1+PA)
     mark, alpha3 = extract(theta, mark, 1+PA)
-    mark, beta = extract(theta, mark, 1+PB)
+    mark, alpha4 = extract(theta, mark, 1+PA)
+    mark, alpha5 = extract(theta, mark, 1+PA)
+    mark, alpha6 = extract(theta, mark, 1+PA)
+    mark, beta1 = extract(theta, mark, 1+PB)
+    mark, beta4 = extract(theta, mark, 1+PB)
+    mark, beta5 = extract(theta, mark, 1+PB)
+    mark, beta6 = extract(theta, mark, 1+PB)
 
     Sig = np.zeros((NI,NI))
     mark, Sig[np.tril_indices(NI)] = extract(theta, mark, NI*(NI+1)/2)
     Sig = Sig + Sig.T - np.diag(np.diag(Sig))
-    return rho, eta, alpha1, alpha2, alpha3, beta, Sig
+    return rho, eta, alpha1, alpha2, alpha3, alpha4, alpha5, alpha6, beta1, beta4, beta5, beta6, Sig
 
 "-----------------------------------------------------------"
 
 def make_indexes(theta, ZA, ZB, ZE, setup):
-    rho, eta, alpha1, alpha2, alpha3, beta, Sig = tunpack(theta, setup)
-    return np.dot(ZE,rho), np.dot(ZE,eta), np.dot(ZA,alpha1), np.dot(ZA,alpha2), np.dot(ZA,alpha3), np.dot(ZB,beta)
+    rho, eta, alpha1, alpha2, alpha3, alpha4, alpha5, alpha6, beta1, beta4, beta5, beta6, Sig = tunpack(theta, setup)
+    return np.dot(ZE,rho), np.dot(ZE,eta), np.dot(ZA,alpha1), np.dot(ZA,alpha2), np.dot(ZA,alpha3), np.dot(ZA,alpha4), np.dot(ZA,alpha5), np.dot(ZA,alpha6), np.dot(ZB,beta1), np.dot(ZB,beta4), np.dot(ZB,beta5), np.dot(ZB,beta6)
 
 def make_mu(theta, X, ZA, ZB, ZE, S, setup):
     N,NI = setup[:2]
-    Rho, Eta, Alpha1, Alpha2, Alpha3, Beta = make_indexes(theta, ZA, ZB, ZE, setup)
-    mu1 = Rho*(1-Eta)       * (Alpha1 + Beta * (np.log(Rho*(1-Eta))      + X))
-    mu2 = (1-Rho)*(1-Eta)   * (Alpha2 + Beta * (np.log((1-Rho)*(1-Eta))  + X))
-    mu3 = Eta               * (Alpha3 + Beta * (np.log(np.divide(Eta,S)) + X))
-    return reduce(np.append,[mu1,mu2,mu3]).reshape(NI,N).T
+    Rho, Eta, Alpha1, Alpha2, Alpha3, Alpha4, Alpha5, Alpha6, Beta1, Beta4, Beta5, Beta6 = make_indexes(theta, ZA, ZB, ZE, setup)
+    mu1 = Rho*(1-Eta)       * (Alpha1 + Beta1 * (np.log(Rho*(1-Eta))      + X))
+    mu2 = (1-Rho)*(1-Eta)   * (Alpha2 + Beta1 * (np.log((1-Rho)*(1-Eta))  + X))
+    mu3 = Eta               * (Alpha3 + Beta1 * (np.log(np.divide(Eta,S)) + X))
+    mu4 = Rho*(1-Eta)       * (Alpha4 + Beta4 * (np.log(Rho*(1-Eta))      + X))
+    mu5 = (1-Rho)*(1-Eta)   * (Alpha5 + Beta5 * (np.log((1-Rho)*(1-Eta))  + X))
+    mu6 = Eta               * (Alpha6 + Beta6 * (np.log(np.divide(Eta,S)) + X))
+    return reduce(np.append,[mu1,mu2,mu3,mu4,mu5,mu6]).reshape(NI,N).T
 
 def add_errors(mu, Sig, setup):
     N,NI = setup[:2]
@@ -77,5 +86,3 @@ def logl(theta, W, X, ZA, ZB, ZE, S, setup):
 
 def neglogl(theta, W, X, ZA, ZB, ZE, S, setup):
     return -logl(theta, W, X, ZA, ZB, ZE, S, setup)
-
-"-----------------------------------------------------------"

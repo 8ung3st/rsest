@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import dlp_sat as dlp
+import dlp_sapsat2 as dlp
 
 def prepareZ(Z, normmean, normstd):
     N = Z.shape[0]
@@ -35,53 +35,53 @@ def tentries(theta, setup, names):
     tentries.append(setup) # appending setup, which we need for tpack
     return dlp.tpack(*tentries)
 
-def getdata(path, good):
+def getdata(path):
     "--- Data: ---"
     Data = pd.read_stata(path)
 
-    if good == "c":
-        W  = np.asarray(Data[['w_clothm', 'w_clothw', 'w_clothc']])
-    if good == "f":
-        W  = np.asarray(Data[['w_FBout_h', 'w_FBout_w', 'w_FBout_c']])
-
+    W  = np.asarray(Data[['w_clothm', 'w_clothw', 'w_clothc', 'w_FBout_h', 'w_FBout_w', 'w_FBout_c']])
     X  = np.asarray(Data['ltotR'])
     X -= np.mean(X)
     S  = np.asarray(Data['nkids'])
     I  = np.asarray(Data['lassets']) # instrument
 
-    ZA  = np.asarray(Data[[ 'kids_2', 'kids_3', 'kids_4', 'k_minage', 'k_meanage', 'sgirls', 'edu_h', 'edu_w', 'age_h', 'age_w', 'urban', 'wave4', 'death', 'res_1', 'res_2']])
+    ZA  = np.asarray(Data[['kids_2', 'kids_3', 'kids_4', 'k_minage', 'k_meanage', 'sgirls', 'edu_h', 'edu_w', 'age_h', 'age_w', 'urban', 'wave4', 'death', 'res_1', 'res_2']])
     meanZA, stdZA = normvectors(ZA)
     ZA = prepareZ(ZA, meanZA, stdZA)
 
     #ZB  = np.asarray(Data[[ 'k_minage', 'k_meanage', 'sgirls', 'edu_h', 'edu_w', 'age_h', 'age_w', 'urban', 'wave4', 'death']])
-    ZB  = np.asarray(Data[[ 'urban']])
+    ZB  = np.asarray(Data[['urban']])
     meanZB, stdZB = normvectors(ZB)
     ZB = prepareZ(ZB, meanZB, stdZB)
 
     #ZE = np.asarray(Data[['k_minage', 'k_meanage', 'sgirls', 'edu_h', 'edu_w', 'age_h', 'age_w', 'urban', 'wave4', 'death']])
-    ZE = np.asarray(Data[[ 'kids_2', 'kids_3', 'kids_4']])
+    ZE = np.asarray(Data[['kids_2', 'kids_3', 'kids_4']])
     meanZE, stdZE = normvectors(ZE)
     ZE = prepareZ(ZE, meanZE, stdZE)
 
     "--- Setup: ---"
-    N, NI  = W.shape # number of hh, number of hh members
+    N, NI  = W.shape # number of hh, number of equations
     PA  = ZA.shape[1]-1 # number of explanatory variables (accross all equations) for alpha (including control fct)
     PB  = ZB.shape[1]-1 # number of explanatory variables (accross all equations) for beta
     PE  = ZE.shape[1]-1 # number of explanatory variables for eta
     setup = [N,NI,PA,PB,PE] # model description
 
     "--- Initial Values: ---"
-    names = ["rho", "eta", "alpha^1", "alpha^2", "alpha^3", "beta^1", "beta^2", "beta^3", "Sigma"]
+    names = ["rho", "eta", "alpha^1", "alpha^2", "alpha^3", "alpha^4", "alpha^5", "alpha^6", "beta^1", "beta^4", "beta^5", "beta^6", "Sigma"]
     rho0 = np.append(.5, np.zeros(PE)) # father's share in parents' share
     eta0 = np.append(.3, np.zeros(PE)) # childrens' share
     alpha10 = np.append(np.mean(W,0)[0], np.zeros(PA)) # initialized at mean budget shares
     alpha20 = np.append(np.mean(W,0)[1], np.zeros(PA))
     alpha30 = np.append(np.mean(W,0)[2], np.zeros(PA))
+    alpha40 = np.append(np.mean(W,0)[3], np.zeros(PA))
+    alpha50 = np.append(np.mean(W,0)[4], np.zeros(PA))
+    alpha60 = np.append(np.mean(W,0)[5], np.zeros(PA))
     beta10 = np.append(.01, np.zeros(PB))
-    beta20 = np.append(.01, np.zeros(PB))
-    beta30 = np.append(.01, np.zeros(PB))
+    beta40 = np.append(.01, np.zeros(PB))
+    beta50 = np.append(.01, np.zeros(PB))
+    beta60 = np.append(.01, np.zeros(PB))
     cov0 = (np.identity(NI)+.1*np.ones((NI,NI)))*.001 # covariance matrix
-    theta0 = dlp.tpack(rho0, eta0, alpha10, alpha20, alpha30, beta10, beta20, beta30, cov0, setup) # parameter vector
+    theta0 = dlp.tpack(rho0, eta0, alpha10, alpha20, alpha30, alpha40, alpha50, alpha60, beta10, beta40, beta50, beta60, cov0, setup) # parameter vector
     tnames = tentries(theta0, setup, names)
 
     return theta0, W, X, ZA, ZB, ZE, S, I, setup, tnames, meanZE, stdZE

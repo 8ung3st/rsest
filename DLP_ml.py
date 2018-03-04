@@ -9,14 +9,14 @@ np.random.seed(1) # set the seed
 
 "--- Load Data ---"
 path = "../../3. Data/Tan_3-4/Sample_py.dta"
-theta0, W, X, ZA, ZB, ZE, S, setup, tnames, meanZ, stdZ = read.getdata(path) # the artificial data is set up in dlp_art_data.py
+theta0, W, X, ZA, ZB, ZE, S, I, setup, tnames, meanZ, stdZ = read.getdata(path) # the artificial data is set up in dlp_art_data.py
 
 "--- Optimize: ---"
 import scipy.optimize as opt
 import time
 
+tol = 5e-7 # 1e-8 will take about three times as long as 1e-6
 start_time_th = time.time()
-tol = 1e-6 # 1e-8 will take about three times as long as 1e-6
 Result = opt.minimize(dlp.neglogl, theta0, args = (W, X, ZA, ZB, ZE, S, setup), method='Powell', options = {'ftol':tol, 'maxfev':1e6, 'disp':True})
 thetahat = Result.x
 print("--- Optimization took %s seconds ---" % (time.time() - start_time_th))
@@ -27,29 +27,20 @@ from joblib import Parallel, delayed
 def bootstrap(t):
     np.random.seed(None) # this way each worker will get a new seed (https://github.com/joblib/joblib/issues/36)
     sample = np.random.choice(range(setup[0]),setup[0], replace = True) # sample with replacement
-    Ws = W[sample,:]
-    Xs = X[sample]
-    ZAs = ZA[sample,:]
-    ZBs = ZB[sample,:]
-    ZEs = ZE[sample,:]
-    Ss = S[sample]
-
-    # first stage missing here
+    Ws, Xs, ZAs, ZBs, ZEs, Ss = read.random_sample(W, X, ZA, ZB, ZE, S, I, setup, sample)
 
     start_time_th = time.time()
-    tol = 1e-6
     Result = opt.minimize(dlp.neglogl, thetahat, args = (Ws, Xs, ZAs, ZBs, ZEs, Ss, setup), method='Powell', options = {'ftol':tol, 'maxfev':1e6, 'disp':True})
-    #Thetahat[:,t] = Result.x
-    print("--- Step " + str(t) + ": Optimization took %s seconds ---" % (time.time() - start_time_th))
-    return Result.x
+    print("--- Step " + str(t) + " took %s seconds ---" % (time.time() - start_time_th))
 
-T = 100
+    return Result.x, sample
+
+T = 500
 if __name__ == '__main__': # "protect my main loop" (https://pythonhosted.org/joblib/parallel.html) but also useful on mac (and seems to indeed make it a bit faster)
-    testresults = Parallel(n_jobs = 4)(delayed(bootstrap)(t) for t in range(T))
-
-    Thetahat = np.array(testresults).T
-    np.save("Thetahat_SAP_" + str(t) + ".npy",Thetahat)
+    BResults = Parallel(n_jobs = 4)(delayed(bootstrap)(t) for t in range(T))
+    Thetahat = np.array([item[0] for item in BResults]).T
     thetahatsd = np.std(Thetahat,1)
+    np.save("../results/Thetahat_SAP_" + str(T) + ".npy",Thetahat)
 
 "--- Output: ---"
 np.set_printoptions(precision=4) # so numbers are displayed with this degree of precision
@@ -62,12 +53,12 @@ latextable = ""
 for entry, line in zip(tnames, thetatable): # just remove the "+ entry" to have no parameter names
     latextable = latextable + entry + " & " + " & ".join(map('{0:.3f}'.format, line)) + " \\\\\n"
 
-with open("../tab/Tan_3-4_SAP_boot" + str(t) + ".tex", "w") as txt_file:
+with open("../tab/Tan_3-4_SAP_boot" + str(T) + ".tex", "w") as txt_file:
     txt_file.write(latextable)
 
 
-
-
+#np.append(range(T),Thetahat[0,:]).reshape(-1,T).T
+#print reduce(np.append, [range(tdim), theta0, thetahat, Thetahat[:,-1]]).reshape(-1,tdim).T
 
 " Diagnose dlp"
 #dlp.neglogl(thetahat8, W, X, ZA, ZB, ZE, S, setup)

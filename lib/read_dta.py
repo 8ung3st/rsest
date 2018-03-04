@@ -43,6 +43,7 @@ def getdata(path):
     X  = np.asarray(Data['ltotR'])
     X -= np.mean(X)
     S  = np.asarray(Data['nkids'])
+    I  = np.asarray(Data['lassets']) # instrument
 
     ZA  = np.asarray(Data[[ 'kids_2', 'kids_3', 'kids_4', 'k_minage', 'k_meanage', 'sgirls', 'edu_h', 'edu_w', 'age_h', 'age_w', 'urban', 'wave4', 'death', 'res_1', 'res_2']])
     meanZA, stdZA = normvectors(ZA)
@@ -77,4 +78,45 @@ def getdata(path):
     theta0 = dlp.tpack(rho0, eta0, alpha10, alpha20, alpha30, beta0, cov0, setup) # parameter vector
     tnames = tentries(theta0, setup, names)
 
-    return theta0, W, X, ZA, ZB, ZE, S, setup, tnames, meanZE, stdZE
+    return theta0, W, X, ZA, ZB, ZE, S, I, setup, tnames, meanZE, stdZE
+
+"--- Helper functions for bootstrap ---"
+
+def select(W, X, ZA, ZB, ZE, S, I, sample):
+    s = sample
+    return W[s,:], X[s], ZA[s,:], ZB[s,:], ZE[s,:], S[s], I[s]
+
+def standardize(M):
+    meanM, stdM = normvectors(M)
+    M = prepareZ(M, meanM, stdM)
+    return M
+
+# update ZA with residuals, doesn't change anything if used on full data
+def first_stage(X,ZA,I,setup):
+    N,NI,PA,PB,PE = setup
+    I2 = np.stack((I,I**2), axis=1)
+    meanI2, stdI2 = normvectors(I2)
+    I2_ones = prepareZ(I2, meanI2, stdI2) # this adds ones at the first column
+    Xf = np.concatenate((ZA[:,:-2],I2_ones[:,1:]), axis=1)
+    beta = np.dot(np.linalg.inv(np.dot(Xf.T, Xf)), np.dot(Xf.T,X)) # X is the dependent variable here
+    res = X - np.dot(beta,Xf.T) # same as from stata
+    res2 = np.stack((res,res**2), axis=1)
+    return np.concatenate((ZA[:,:-2],res2), axis=1)
+
+def random_sample(W, X, ZA, ZB, ZE, S, I, setup, sample):
+    Ws, Xs, ZAs, ZBs, ZEs, Ss, Is = select(W, X, ZA, ZB, ZE, S, I, sample) # note: means, std not
+    " First Stage: "
+    ZAs = first_stage(Xs,ZAs,Is,setup) # update residuals in ZA
+
+    ZAs = standardize(ZAs[:,1:]) # standardize covariates incl residuals
+    ZBs = standardize(ZBs[:,1:])
+    ZEs = standardize(ZEs[:,1:])
+    Xs -= np.mean(Xs)                   # demean X
+
+    Ws = np.float32(Ws)
+    Xs = np.float32(Xs)
+    ZAs = np.float32(ZAs)
+    ZBs = np.float32(ZBs)
+    ZEs = np.float32(ZEs)
+    Ss = np.float32(Ss)
+    return Ws, Xs, ZAs, ZBs, ZEs, Ss
